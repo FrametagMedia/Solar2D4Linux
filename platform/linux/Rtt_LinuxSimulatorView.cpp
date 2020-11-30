@@ -42,6 +42,8 @@
 #define SIMULATOR_CONFIG_SKIN_HEIGHT "/skinHeight"
 #define SIMULATOR_CONFIG_SKIN_ZOOMED_WIDTH "/zoomedWidth"
 #define SIMULATOR_CONFIG_SKIN_ZOOMED_HEIGHT "/zoomedHeight"
+#define SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_WIDTH  "/welcomeScreenZoomedWidth"
+#define SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_HEIGHT "/welcomeScreenZoomedHeight"
 
 namespace Rtt
 {
@@ -65,6 +67,8 @@ namespace Rtt
 	int LinuxSimulatorView::Config::skinHeight = 480;
 	int LinuxSimulatorView::Config::zoomedWidth = LinuxSimulatorView::Config::skinWidth;
 	int LinuxSimulatorView::Config::zoomedHeight = LinuxSimulatorView::Config::skinHeight;
+	int LinuxSimulatorView::Config::welcomeScreenZoomedWidth = 640;
+	int LinuxSimulatorView::Config::welcomeScreenZoomedHeight = 480;
 	wxConfig *LinuxSimulatorView::Config::configFile;
 	std::map<int, LinuxSimulatorView::SkinProperties> LinuxSimulatorView::fSkins;
 
@@ -92,6 +96,8 @@ namespace Rtt
 			LinuxSimulatorView::Config::configFile->Read(wxT(SIMULATOR_CONFIG_SKIN_HEIGHT), &LinuxSimulatorView::Config::skinHeight);
 			LinuxSimulatorView::Config::configFile->Read(wxT(SIMULATOR_CONFIG_SKIN_ZOOMED_WIDTH), &LinuxSimulatorView::Config::zoomedWidth);
 			LinuxSimulatorView::Config::configFile->Read(wxT(SIMULATOR_CONFIG_SKIN_ZOOMED_HEIGHT), &LinuxSimulatorView::Config::zoomedHeight);
+			LinuxSimulatorView::Config::configFile->Read(wxT(SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_WIDTH), &LinuxSimulatorView::Config::welcomeScreenZoomedWidth);
+			LinuxSimulatorView::Config::configFile->Read(wxT(SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_HEIGHT), &LinuxSimulatorView::Config::welcomeScreenZoomedHeight);
 			LinuxSimulatorView::Config::relaunchOnFileChange = static_cast<LinuxPreferencesDialog::RelaunchType>(relaunchOnFileChange);
 		}
 		else
@@ -113,6 +119,8 @@ namespace Rtt
 		LinuxSimulatorView::Config::configFile->Write(wxT(SIMULATOR_CONFIG_SKIN_HEIGHT), LinuxSimulatorView::Config::skinHeight);
 		LinuxSimulatorView::Config::configFile->Write(wxT(SIMULATOR_CONFIG_SKIN_ZOOMED_WIDTH), LinuxSimulatorView::Config::zoomedWidth);
 		LinuxSimulatorView::Config::configFile->Write(wxT(SIMULATOR_CONFIG_SKIN_ZOOMED_HEIGHT), LinuxSimulatorView::Config::zoomedHeight);
+		LinuxSimulatorView::Config::configFile->Write(wxT(SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_WIDTH), LinuxSimulatorView::Config::welcomeScreenZoomedWidth);
+		LinuxSimulatorView::Config::configFile->Write(wxT(SIMULATOR_CONFIG_WELCOME_SCREEN_ZOOMED_HEIGHT), LinuxSimulatorView::Config::welcomeScreenZoomedHeight);
 		LinuxSimulatorView::Config::configFile->Flush();
 	}
 
@@ -316,154 +324,5 @@ namespace Rtt
 		platform->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
 		linuxBuilderParams.SetBuildSettingsPath(buildSettingsPath.GetString());
 		int rc = packager.Build(&linuxBuilderParams, NULL);
-	}
-
-	void LinuxSimulatorView::OnWebBuild(wxCommandEvent &e)
-	{
-#ifndef CORONABUILDER_LINUX
-		webBuildParams *params = (webBuildParams *)e.GetEventUserData();
-		SolarAppContext *ctx = params->fCtx;
-		bool useStandardResources = params->fUseStandardResources->GetValue();
-		bool runAfterBuild = params->fRunAfterBuild->GetValue();
-		bool createFBInstantArchive = params->fCreateFBInstance->GetValue();
-		const char *srcDir = ctx->GetAppPath();
-		const char *dstDir = ctx->GetSaveFolder().c_str();
-		const char *identity = "no-identity";
-		const char *applicationName = ctx->GetAppName().c_str();
-
-		// Create the app packager.
-		LinuxPlatform *platform = wxGetApp().GetPlatform();
-		MPlatformServices *service = new LinuxPlatformServices(platform);
-		WebAppPackager packager(*service);
-
-		// Read the application's "build.settings" file.
-		bool wasSuccessful = packager.ReadBuildSettings(srcDir);
-
-		if (!wasSuccessful)
-		{
-			return;
-		}
-
-		// Check if a custom build ID has been assigned.
-		// This is typically assigned to daily build versions of Corona.
-		const char *customBuildId = packager.GetCustomBuildId();
-
-		if (!Rtt_StringIsEmpty(customBuildId))
-		{
-			Rtt_Log("\nUsing custom Build Id %s\n", customBuildId);
-		}
-
-		// these are currently unused
-		const char *bundleId = "bundleId"; //TODO
-		const char *sdkRoot = "";
-		int targetVersion = Rtt::TargetDevice::kWeb1_0;
-		const TargetDevice::Platform targetPlatform(TargetDevice::Platform::kWebPlatform);
-		const char *versionName = "1.0.0";
-		bool isDistribution = true;
-
-		std::string webtemplate = platform->getInstallDir();
-		webtemplate += LUA_DIRSEP;
-		webtemplate += "Resources";
-		webtemplate += LUA_DIRSEP;
-		webtemplate += "webtemplate.zip";
-
-		// Package build settings parameters.
-		WebAppPackagerParams webBuilderParams(
-		    applicationName, versionName, identity, NULL,
-		    srcDir, dstDir, NULL,
-		    targetPlatform, targetVersion,
-		    Rtt::TargetDevice::kWebGenericBrowser, customBuildId,
-		    NULL, bundleId, isDistribution, useStandardResources, runAfterBuild, webtemplate.c_str(), createFBInstantArchive);
-
-		// Select build template
-		Rtt::Runtime *runtimePointer = ctx->GetRuntime();
-		//	U32 luaModules = runtimePointer->VMContext().GetModules();
-		//	webBuilderParams.InitializeProductId(luaModules);
-
-		const char kBuildSettings[] = "build.settings";
-		Rtt::String buildSettingsPath;
-		ctx->GetPlatform()->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
-		webBuilderParams.SetBuildSettingsPath(buildSettingsPath.GetString());
-
-		std::string tmp = Rtt_GetSystemTempDirectory();
-		tmp += LUA_DIRSEP;
-		tmp += "CoronaLabs";
-
-		// Have the server build the app. (Warning! This is a long blocking call.)
-		platform->SetActivityIndicator(true);
-		int rc = packager.Build(&webBuilderParams, tmp.c_str());
-		platform->SetActivityIndicator(false);
-
-		params->fDlg->Close();
-
-		wxMessageDialog *dial;
-
-		if (rc == 0)
-		{
-			dial = new wxMessageDialog(NULL, wxT("Your application was built successfully."), wxT("Solar2D Simulator"), wxOK | wxICON_INFORMATION);
-		}
-		else
-		{
-			dial = new wxMessageDialog(NULL, wxT("Failed to build application."), wxT("Solar2D Simulator"), wxOK | wxICON_ERROR);
-		}
-
-		dial->ShowModal();
-#endif
-	}
-
-	void LinuxSimulatorView::OnCancel(wxCommandEvent &e)
-	{
-		cancelBuild *eb = (cancelBuild *)e.GetEventUserData();
-		eb->fDlg->Close();
-	}
-
-	/// <summary>Opens a dialog to build the currently selected project as an app.</summary>
-	void LinuxSimulatorView::OnBuildForWeb(SolarAppContext *ctx)
-	{
-		wxDialog *OpenDialog = new wxDialog(NULL, -1, "HTML5 Build Setup (beta)", wxDefaultPosition, wxSize(550, 280));
-		wxPanel *panel = new wxPanel(OpenDialog, -1);
-		wxBoxSizer *vbox = new wxBoxSizer(wxVERTICAL);
-		wxBoxSizer *hbox = new wxBoxSizer(wxHORIZONTAL);
-
-		int y = 15;
-		int h = 30;
-		int x2 = 170;
-		wxSize sz = wxSize(350, 30);
-		new wxStaticText(panel, -1, wxT("Application Name:"), wxPoint(20, y));
-		new wxTextCtrl(panel, -1, ctx->GetAppName(), wxPoint(x2, y - 2), sz);
-		y += h;
-		new wxStaticText(panel, -1, wxT("Version Code:"), wxPoint(20, y));
-		new wxTextCtrl(panel, -1, "1", wxPoint(x2, y - 2), sz);
-		y += h;
-		new wxStaticText(panel, -1, wxT("Project Path:"), wxPoint(20, y));
-		new wxTextCtrl(panel, -1, ctx->GetAppPath(), wxPoint(x2, y - 2), sz);
-		y += h;
-		new wxStaticText(panel, -1, wxT("Save to Folder:"), wxPoint(20, y));
-		new wxTextCtrl(panel, -1, ctx->GetSaveFolder(), wxPoint(x2, y - 2), sz);
-
-		y += h + 5;
-		wxCheckBox *useStandardResources = new wxCheckBox(panel, -1, "Include Widget Resources", wxPoint(x2, y));
-		y += h;
-		wxCheckBox *runAfterBuild = new wxCheckBox(panel, -1, "Run after build?", wxPoint(x2, y));
-		y += h;
-		wxCheckBox *createFBInstance = new wxCheckBox(panel, -1, "Create FB Instant archive", wxPoint(x2, y));
-
-		wxButton *okButton = new wxButton(OpenDialog, -1, wxT("Build"), wxDefaultPosition, wxSize(70, 30));
-		okButton->Bind(wxEVT_BUTTON, &LinuxSimulatorView::OnWebBuild, wxID_ANY, wxID_ANY, new webBuildParams(OpenDialog, ctx, useStandardResources, runAfterBuild, createFBInstance));
-		okButton->SetDefault();
-
-		wxButton *closeButton = new wxButton(OpenDialog, -1, wxT("Cancel"), wxDefaultPosition, wxSize(70, 30));
-		closeButton->Bind(wxEVT_BUTTON, &LinuxSimulatorView::OnCancel, wxID_ANY, wxID_ANY, new cancelBuild(OpenDialog)); // cancel
-
-		hbox->Add(okButton, 1);
-		hbox->Add(closeButton, 1, wxLEFT, 5);
-
-		vbox->Add(panel, 1);
-		vbox->Add(hbox, 0, wxALIGN_CENTER | wxTOP | wxBOTTOM, 10);
-
-		OpenDialog->SetSizer(vbox);
-		OpenDialog->Centre();
-		int rc = OpenDialog->ShowModal();
-		OpenDialog->Destroy();
 	}
 } // namespace Rtt

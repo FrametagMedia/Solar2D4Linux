@@ -196,7 +196,7 @@ void LinuxMenuEvents::OnBuildForAndroid(wxCommandEvent &event)
 
 void LinuxMenuEvents::OnBuildForWeb(wxCommandEvent &event)
 {
-	Rtt::LinuxSimulatorView::OnBuildForWeb(wxGetApp().GetFrame()->GetContext());
+	// todo
 }
 
 void LinuxMenuEvents::OnBuildForLinux(wxCommandEvent &event)

@@ -92,6 +92,8 @@ namespace Rtt
 			static int skinHeight;
 			static int zoomedWidth;
 			static int zoomedHeight;
+			static int welcomeScreenZoomedWidth;
+			static int welcomeScreenZoomedHeight;
 			static wxConfig *configFile;
 		};
 
