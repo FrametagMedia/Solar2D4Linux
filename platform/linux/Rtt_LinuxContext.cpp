@@ -879,6 +879,13 @@ void SolarFrame::CreateMenus()
 			fileMenu->Append(wxID_EXIT, _T("&Exit"));
 			fMenuMain->Append(fileMenu, _T("&File"));
 
+			// view menu
+			fViewMenu = new wxMenu();
+			fZoomIn = fViewMenu->Append(ID_MENU_ZOOM_IN, _T("&Zoom In \tCtrl-KP_ADD"));
+			fZoomOut = fViewMenu->Append(ID_MENU_ZOOM_OUT, _T("&Zoom Out \tCtrl-KP_Subtract"));
+			fViewMenu->AppendSeparator();
+			fMenuMain->Append(fViewMenu, _T("&View"));
+
 			// about menu
 			wxMenu *helpMenu = new wxMenu();
 			helpMenu->Append(ID_MENU_OPEN_DOCUMENTATION, _T("&Online Documentation..."));
@@ -1336,22 +1343,35 @@ void SolarFrame::OnZoomIn(wxCommandEvent &event)
 	SolarFrame *frame = wxGetApp().GetFrame();
 	wxDisplay display(wxDisplay::GetFromWindow(frame));
 	wxRect screen = display.GetClientArea();
+	bool doResize = false;
 
 	int proposedWidth = frame->GetContext()->GetRuntimeDelegate()->fContentWidth * LinuxSimulatorView::skinScaleFactor;
 	int proposedHeight = frame->GetContext()->GetRuntimeDelegate()->fContentHeight * LinuxSimulatorView::skinScaleFactor;
 
 	fZoomOut->Enable(true);
 
-	if (frame->currentSkinWidth >= proposedWidth && frame->currentSkinHeight >= proposedHeight)
+	if (IsHomeScreen(GetContext()->GetAppName()))
 	{
-		if (proposedWidth < screen.width && proposedHeight < screen.height)
+		doResize = (proposedWidth < screen.width && proposedHeight < screen.height);
+	}
+	else
+	{
+		if (frame->currentSkinWidth >= proposedWidth && frame->currentSkinHeight >= proposedHeight)
 		{
-			frame->GetContext()->GetRuntimeDelegate()->fContentWidth = proposedWidth;
-			frame->GetContext()->GetRuntimeDelegate()->fContentHeight = proposedHeight;
-			frame->ChangeSize(proposedWidth, proposedHeight);
-			frame->GetContext()->RestartRenderer();
-			GetCanvas()->Refresh(false);
+			doResize = (proposedWidth < screen.width && proposedHeight < screen.height);
+		}
+	}
 
+	if (doResize)
+	{
+		frame->GetContext()->GetRuntimeDelegate()->fContentWidth = proposedWidth;
+		frame->GetContext()->GetRuntimeDelegate()->fContentHeight = proposedHeight;
+		frame->ChangeSize(proposedWidth, proposedHeight);
+		frame->GetContext()->RestartRenderer();
+		GetCanvas()->Refresh(false);
+
+		if (!IsHomeScreen(GetContext()->GetAppName()))
+		{
 			LinuxSimulatorView::Config::zoomedWidth = proposedWidth;
 			LinuxSimulatorView::Config::zoomedHeight = proposedHeight;
 			LinuxSimulatorView::Config::Save();
@@ -1464,6 +1484,11 @@ void SolarFrame::OnOpen(wxCommandEvent &event)
 	fSolarGLCanvas->fContext = fContext;
 	fContext->SetCanvas(fSolarGLCanvas);
 	SetMenu(path.c_str());
+
+	// restore zoom level
+	fContext->GetRuntimeDelegate()->fContentWidth = LinuxSimulatorView::Config::zoomedWidth;
+	fContext->GetRuntimeDelegate()->fContentHeight = LinuxSimulatorView::Config::zoomedHeight;
+
 	fContext->RestartRenderer();
 	fSolarGLCanvas->StartTimer(1000.0f / (float)fContext->GetFPS());
 
