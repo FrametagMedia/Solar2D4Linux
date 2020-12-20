@@ -142,10 +142,10 @@ namespace Rtt
 
 	void AndroidBuildDialog::SetAppContext(SolarAppContext *appContext)
 	{
-		fCoronaAppContext = appContext;
-		appNameTextCtrl->SetValue(fCoronaAppContext->GetAppName());
-		appPathTextCtrl->SetValue(fCoronaAppContext->GetAppPath());
-		appBuildPathTextCtrl->SetValue(fCoronaAppContext->GetSaveFolder());
+		fAppContext = appContext;
+		appNameTextCtrl->SetValue(fAppContext->GetAppName());
+		appPathTextCtrl->SetValue(fAppContext->GetAppPath());
+		appBuildPathTextCtrl->SetValue(fAppContext->GetSaveFolder());
 		appVersionTextCtrl->SetValue("1.0");
 		appVersionCodeTextCtrl->SetValue("1");
 
@@ -153,7 +153,7 @@ namespace Rtt
 		int rc = getlogin_r(uname, sizeof(uname));
 		std::string package("com.solar2d.");
 		package.append(uname).append(".");
-		package.append(fCoronaAppContext->GetAppName());
+		package.append(fAppContext->GetAppName());
 		appPackageNameTextCtrl->SetValue(package);
 
 		std::string keystorePath(LinuxFileUtils::GetStartupPath(NULL));
@@ -161,6 +161,34 @@ namespace Rtt
 		keystorePathTextCtrl->SetValue(keystorePath);
 
 		ReadKeystore(keystorePath, keystorePassword.ToStdString().c_str(), true);
+
+		// Get the version code from build.settings
+		const char kBuildSettings[] = "build.settings";
+		String filePath(&fAppContext->GetPlatform()->GetAllocator());
+		fAppContext->GetPlatform()->PathForFile(kBuildSettings, MPlatform::kResourceDir, MPlatform::kTestFileExists, filePath);
+		lua_State *L = fAppContext->GetRuntime()->VMContext().L();
+		const char *buildSettingsPath = filePath.GetString();
+
+		if (buildSettingsPath && 0 == luaL_loadfile(L, buildSettingsPath) && 0 == lua_pcall(L, 0, 0, 0))
+		{
+			lua_getglobal(L, "settings");
+			if (lua_istable(L, -1))
+			{
+				lua_getfield(L, -1, "android");
+				if (lua_istable(L, -1))
+				{
+					lua_getfield(L, -1, "versionCode");
+					if (lua_isstring(L, -1))
+					{
+						const char *versionCode = lua_tostring(L, -1);
+						appVersionCodeTextCtrl->SetValue(versionCode);
+					}
+					lua_pop(L, 1);
+				}
+
+				lua_pop(L, 1);
+			}
+		}
 	}
 
 	bool AndroidBuildDialog::ReadKeystore(std::string keystorePath, std::string password, bool showErrors)
@@ -250,7 +278,7 @@ namespace Rtt
 	{
 		LinuxPlatform *platform = wxGetApp().GetPlatform();
 		MPlatformServices *service = new LinuxPlatformServices(platform);
-		Rtt::Runtime *runtimePointer = fCoronaAppContext->GetRuntime();
+		Rtt::Runtime *runtimePointer = fAppContext->GetRuntime();
 		wxString appName(appNameTextCtrl->GetValue());
 		wxString sourceDir(appPathTextCtrl->GetValue());
 		wxString outputDir(appBuildPathTextCtrl->GetValue());
@@ -381,7 +409,7 @@ namespace Rtt
 		    packageName.ToStdString().c_str(), isDistribution, keystore.ToStdString().c_str(), keystorePassword.ToStdString().c_str(), keystoreAlias.ToStdString().c_str(), keystorePassword.ToStdString().c_str()/*alias_pwd.c_str()*/, versionCode);
 
 		// select build template
-		fCoronaAppContext->GetPlatform()->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
+		fAppContext->GetPlatform()->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
 		androidBuilderParams.SetBuildSettingsPath(buildSettingsPath.GetString());
 
 		// build the app (warning! this is blocking call)
@@ -410,11 +438,21 @@ namespace Rtt
 		// install after build
 		if (buildResult == 0 && installAfterBuild)
 		{
-			std::string cmd("adb install -r \"");
-			cmd.append(outputDir.ToStdString().c_str());
-			cmd.append("/").append(appName.ToStdString().c_str());
-			cmd.append(".apk").append("\"");
-			wxExecute(cmd);
+			const char *adbPath = "/opt/Solar2D/Android/platform-tools/adb";
+
+			if (wxFileName::Exists(adbPath))
+			{
+				std::string cmd(adbPath);
+				cmd.append(" install -r \"");
+				cmd.append(outputDir.ToStdString().c_str());
+				cmd.append("/").append(appName.ToStdString().c_str());
+				cmd.append(".apk").append("\"");
+				wxExecute(cmd);
+			}
+			else
+			{
+				Rtt_LogException("adb not found at the expected location of %s\n. Not copying to device as a result.\n", adbPath);
+			}
 		}
 	}
 

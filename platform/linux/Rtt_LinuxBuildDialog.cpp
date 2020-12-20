@@ -97,10 +97,10 @@ namespace Rtt
 
 	void LinuxBuildDialog::SetAppContext(SolarAppContext *appContext)
 	{
-		fCoronaAppContext = appContext;
-		appNameTextCtrl->SetValue(fCoronaAppContext->GetAppName());
-		appPathTextCtrl->SetValue(fCoronaAppContext->GetAppPath());
-		appBuildPathTextCtrl->SetValue(fCoronaAppContext->GetSaveFolder());
+		fAppContext = appContext;
+		appNameTextCtrl->SetValue(fAppContext->GetAppName());
+		appPathTextCtrl->SetValue(fAppContext->GetAppPath());
+		appBuildPathTextCtrl->SetValue(fAppContext->GetSaveFolder());
 	}
 
 	BEGIN_EVENT_TABLE(LinuxBuildDialog, wxDialog)
@@ -124,7 +124,7 @@ namespace Rtt
 		LinuxPlatform *platform = wxGetApp().GetPlatform();
 		MPlatformServices *service = new LinuxPlatformServices(platform);
 		LinuxAppPackager packager(*service);
-		Rtt::Runtime *runtimePointer = fCoronaAppContext->GetRuntime();
+		Rtt::Runtime *runtimePointer = fAppContext->GetRuntime();
 		wxString appName(appNameTextCtrl->GetValue());
 		wxString sourceDir(appPathTextCtrl->GetValue());
 		wxString outputDir(appBuildPathTextCtrl->GetValue());
@@ -192,7 +192,7 @@ namespace Rtt
 		    NULL, useWidgetResources, runAfterBuild, false);
 
 		// select build template
-		fCoronaAppContext->GetPlatform()->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
+		fAppContext->GetPlatform()->PathForFile(kBuildSettings, Rtt::MPlatform::kResourceDir, Rtt::MPlatform::kTestFileExists, buildSettingsPath);
 		linuxBuilderParams.SetBuildSettingsPath(buildSettingsPath.GetString());
 
 		// build the app (warning! This is blocking call)

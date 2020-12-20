@@ -50,11 +50,10 @@ namespace Rtt
 	{
 		wxString path;
 
-		if (name)
+		if (name != NULL)
 		{
 			path = name;
 		}
-
 		else
 		{
 			wxFileDialog openFileDialog(wxGetApp().GetParent(), _("Open"), "~/Documents/Solar2D Projects", "", "Simulator Files (main.lua)|main.lua", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
@@ -90,7 +89,6 @@ namespace Rtt
 		switch (platformType)
 		{
 			case TargetDevice::kAndroidPlatform:
-				//			fSimulatorView.PostMessage(WM_COMMAND, ID_FILE_OPENFORBUILD);
 				return true;
 		}
 

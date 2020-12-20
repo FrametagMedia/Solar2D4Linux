@@ -29,7 +29,7 @@ namespace Rtt
 		void DoLayout();
 
 	protected:
-		SolarAppContext *fCoronaAppContext;
+		SolarAppContext *fAppContext;
 		wxTextCtrl *appNameTextCtrl;
 		wxTextCtrl *appVersionTextCtrl;
 		wxTextCtrl *appVersionCodeTextCtrl;
