@@ -19,20 +19,27 @@
 #include "ListKeyStore.h"
 #include "Core/Rtt_FileSystem.h"
 #include <string.h>
+#include <wx/valtext.h>
 
 #define GOOGLE_PLAY_STORE_TARGET "Google Play"
 #define AMAZON_STORE_TARGET "Amazon"
 #define NO_STORE_TARGET "None"
 
+class wxRegEx;
 namespace Rtt
 {
 	AndroidBuildDialog::AndroidBuildDialog(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos, const wxSize &size, long style):
 		wxDialog(parent, id, title, pos, size, wxCAPTION)
 	{
-		appNameTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString);
-		appVersionTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString);
-		appVersionCodeTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString);
-		appPackageNameTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString);
+		wxTextValidator appNameValidator(wxFILTER_ALPHANUMERIC);
+		wxTextValidator appVersionCodeValidator(wxFILTER_DIGITS);
+		wxTextValidator packageNameValidator(wxFILTER_ALPHANUMERIC  | wxFILTER_INCLUDE_CHAR_LIST);
+		packageNameValidator.AddCharIncludes(".");
+
+		appNameTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, appNameValidator);
+		appVersionTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, packageNameValidator);
+		appVersionCodeTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, appVersionCodeValidator);
+		appPackageNameTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0, packageNameValidator);
 		appPathTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 		appBuildPathTextCtrl = new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
 		appBuildPathButton = new wxButton(this, wxID_OPEN, wxT("..."));
@@ -308,7 +315,8 @@ namespace Rtt
 		AndroidAppPackager packager(*service, androidTemplate.c_str());
 		bool foundBuildSettings = packager.ReadBuildSettings(sourceDir.c_str());
 		const char *customBuildId = packager.GetCustomBuildId();
-		bool checksPassed = foundBuildSettings && !appVersion.IsEmpty() && !appName.IsEmpty() && !appVersionCode.IsEmpty() && !packageName.IsEmpty() && versionCode != 0 && keystorePasswordValid;
+		bool checksPassed = foundBuildSettings && !appVersion.IsEmpty() && !appName.IsEmpty()
+		                    && !appVersionCode.IsEmpty() && !packageName.IsEmpty() && versionCode != 0 && keystorePasswordValid;
 
 		// pre-build validation
 		if (!foundBuildSettings)
@@ -326,6 +334,12 @@ namespace Rtt
 			resultDialog->SetMessage(wxT("App version cannot be empty."));
 		}
 
+		if (appVersion.StartsWith(".") || appVersion.EndsWith("."))
+		{
+			resultDialog->SetMessage(wxT("App version cannot start or end with a period (dot)."));
+			checksPassed = false;
+		}
+
 		if (appVersionCode.IsEmpty())
 		{
 			resultDialog->SetMessage(wxT("App version code cannot be empty."));
@@ -339,6 +353,18 @@ namespace Rtt
 		if (packageName.IsEmpty())
 		{
 			resultDialog->SetMessage(wxT("App package name cannot be empty."));
+		}
+
+		if (!packageName.Contains("."))
+		{
+			resultDialog->SetMessage(wxT("App package name must contain at least one period (dot)."));
+			checksPassed = false;
+		}
+
+		if (packageName.StartsWith(".") || packageName.EndsWith("."))
+		{
+			resultDialog->SetMessage(wxT("App package name cannot start or end with a period (dot)."));
+			checksPassed = false;
 		}
 
 		if (!keystorePasswordValid)
