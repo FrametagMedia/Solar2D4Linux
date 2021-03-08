@@ -1,21 +1,22 @@
-#ifndef RTT_LINUX_NEW_PROJECT_DIALOG_H
-#define RTT_LINUX_NEW_PROJECT_DIALOG_H
+#ifndef Rtt_LINUX_NEW_PROJECT_DIALOG_H
+#define Rtt_LINUX_NEW_PROJECT_DIALOG_H
 
-#include <wx/wx.h>
-#include <wx/image.h>
-#include <wx/statline.h>
-#include<string>
-#pragma once
+#include "wx/wx.h"
+#include "wx/image.h"
+#include "wx/statline.h"
+#include <string>
 
 namespace Rtt
 {
-	class NewProjectDialog: public wxDialog
+	class LinuxNewProjectDialog: public wxDialog
 	{
 	public:
+		LinuxNewProjectDialog(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE);
 
-		NewProjectDialog(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos=wxDefaultPosition, const wxSize& size=wxDefaultSize, long style=wxDEFAULT_DIALOG_STYLE);
-		std::string ProjectFolder;
-		std::string fProjectName;
+	public:
+		std::string GetProjectName() { return fProjectName; }
+		std::string GetProjectFolder() { return fProjectFolder; }
+
 	private:
 		void SetProperties();
 		void DoLayout();
@@ -30,22 +31,24 @@ namespace Rtt
 		std::string fProjectPath;
 		std::string fProjectSavePath;
 		std::string fResourcePath;
-		
+		std::string fProjectFolder;
+		std::string fProjectName;
+
 	protected:
-		wxTextCtrl* txtApplicationName;
-		wxTextCtrl* txtProjectFolder;
-		wxButton* btnBrowse;
-		wxRadioButton* rProjectOption1;
-		wxRadioButton* rProjectOption2;
-		wxRadioButton* rProjectOption3;
-		wxRadioButton* rProjectOption4;
-		wxComboBox* cboScreenSizePreset;
-		wxTextCtrl* txtWidth;
-		wxTextCtrl* txtHeight;
-		wxRadioButton* rUpright;
-		wxRadioButton* rSideways;
-		wxButton* btnOK;
-		wxButton* btnCancel;
+		wxTextCtrl *txtApplicationName;
+		wxTextCtrl *txtProjectFolder;
+		wxButton *btnBrowse;
+		wxRadioButton *rProjectOption1;
+		wxRadioButton *rProjectOption2;
+		wxRadioButton *rProjectOption3;
+		wxRadioButton *rProjectOption4;
+		wxComboBox *cboScreenSizePreset;
+		wxTextCtrl *txtWidth;
+		wxTextCtrl *txtHeight;
+		wxRadioButton *rUpright;
+		wxRadioButton *rSideways;
+		wxButton *btnOK;
+		wxButton *btnCancel;
 
 		DECLARE_EVENT_TABLE();
 
@@ -55,7 +58,6 @@ namespace Rtt
 		void OnOKClicked(wxCommandEvent &event);
 		void OnCancelClicked(wxCommandEvent &event);
 	};
-	
 } // namespace Rtt
 
-#endif // RTT_LINUX_NEW_PROJECT_DIALOG_H
+#endif // Rtt_LINUX_NEW_PROJECT_DIALOG_H

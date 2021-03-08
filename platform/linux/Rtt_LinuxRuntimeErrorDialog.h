@@ -1,20 +1,18 @@
-#ifndef RTT_LINUX_RUNTIME_ERROR_DIALOG_H
-#define RTT_LINUX_RUNTIME_ERROR_DIALOG_H
+#ifndef Rtt_LINUX_RUNTIME_ERROR_DIALOG_H
+#define Rtt_LINUX_RUNTIME_ERROR_DIALOG_H
 
-#include <wx/wx.h>
-#include <wx/image.h>
-#include <wx/statline.h>
-#include <wx/activityindicator.h>
+#include "wx/wx.h"
+#include "wx/image.h"
+#include "wx/statline.h"
+#include "wx/activityindicator.h"
 #include <string>
-
-#pragma once
 
 namespace Rtt
 {
-	class NewRuntimeErrorDialog : public wxDialog
+	class LinuxRuntimeErrorDialog : public wxDialog
 	{
 	public:
-		NewRuntimeErrorDialog(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE);
+		LinuxRuntimeErrorDialog(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos = wxDefaultPosition, const wxSize &size = wxDefaultSize, long style = wxDEFAULT_DIALOG_STYLE);
 		void SetProperties(const char *title, const char *errorMsg, const char *stackTraceback);
 
 	private:
@@ -35,7 +33,6 @@ namespace Rtt
 		void OnOKClicked(wxCommandEvent &event);
 		void OnCancelClicked(wxCommandEvent &event);
 	};
-
 } // namespace Rtt
 
-#endif // RTT_LINUX_RUNTIME_ERROR_DIALOG_H
+#endif // Rtt_LINUX_RUNTIME_ERROR_DIALOG_H

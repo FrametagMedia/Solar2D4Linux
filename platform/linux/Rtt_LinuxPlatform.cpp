@@ -31,10 +31,10 @@
 #include "Rtt_LinuxWebPopup.h"
 #include "Rtt_LinuxWebView.h"
 #include "Rtt_LinuxContainer.h"
+#include "Rtt_LinuxFileUtils.h"
 #include "Rtt_PreferenceCollection.h"
 #include "Rtt_Freetype.h"
-#include "Rtt_LinuxRuntimeErrorDialog.h"
-#include <wx/wx.h>
+#include "wx/wx.h"
 #include "wx/activityindicator.h"
 #include <pwd.h>
 
@@ -42,7 +42,6 @@ using namespace std;
 
 namespace Rtt
 {
-
 	LinuxPlatform::LinuxPlatform(const char *resourceDir, const char *documentsDir, const char *temporaryDir,
 	                             const char *cachesDir, const char *systemCachesDir, const char *skinDir, const char *installDir)
 		: fAllocator(Rtt_AllocatorCreate()),
@@ -70,10 +69,14 @@ namespace Rtt
 		fSystemCachesDir.Set(systemCachesDir);
 		fSkinDir.Set(skinDir);
 		fInstallDir.Set(installDir);
+		fStatusBarMode = MPlatform::StatusBarMode::kDefaultStatusBar;
+		isMouseCursorVisible = true;
+		fRuntimeErrorDialog = new LinuxRuntimeErrorDialog(NULL, wxID_ANY, wxEmptyString);
 	}
 
 	LinuxPlatform::~LinuxPlatform()
 	{
+		fRuntimeErrorDialog->Destroy();
 		Rtt_DELETE(fFBConnect);
 		Rtt_DELETE(fStoreProvider);
 		Rtt_DELETE(fWebPopup);
@@ -123,6 +126,7 @@ namespace Rtt
 
 			fVideoPlayer = Rtt_NEW(fAllocator, LinuxVideoPlayer(handle, *fAllocator, w, h));
 		}
+
 		return fVideoPlayer;
 #else
 		return NULL;
@@ -133,12 +137,9 @@ namespace Rtt
 	{
 		if (!fImageProvider)
 		{
-			int w, h;
-			fScreenSurface->getWindowSize(&w, &h);
-#ifndef _WIN32
-			fImageProvider = Rtt_NEW(fAllocator, LinuxImageProvider(handle, w, h));
-#endif
+			fImageProvider = Rtt_NEW(&GetAllocator(), LinuxImageProvider(handle));
 		}
+
 		return fImageProvider;
 	}
 
@@ -151,16 +152,13 @@ namespace Rtt
 
 			fVideoProvider = Rtt_NEW(fAllocator, LinuxVideoProvider(handle, w, h));
 		}
+
 		return fVideoProvider;
 	}
 
 	PlatformStoreProvider *LinuxPlatform::GetStoreProvider(const ResourceHandle<lua_State> &handle) const
 	{
-		//		if (!fStoreProvider)
-		//		{
-		//			fStoreProvider = Rtt_NEW(Allocator(), LinuxStoreProvider(handle));
-		//		}
-		return NULL; //fStoreProvider;
+		return NULL;
 	}
 
 	void LinuxPlatform::SetIdleTimer(bool enabled) const
@@ -205,6 +203,7 @@ namespace Rtt
 	PlatformBitmap *LinuxPlatform::CreateBitmap(const char *path, bool convertToGrayscale) const
 	{
 		PlatformBitmap *result = NULL;
+
 		if (path)
 		{
 			if (convertToGrayscale)
@@ -238,11 +237,13 @@ namespace Rtt
 		// Determine if the given file name exists.
 		bool fileExists = false;
 		FILE *file = fopen(filename, "r");
+
 		if (file)
 		{
 			fileExists = true;
 			fclose(file);
 		}
+
 		return fileExists;
 	}
 
@@ -282,16 +283,8 @@ namespace Rtt
 
 					if (filename != NULL && FileExists(result.GetString()) == false)
 					{
-						const char *homeDir = NULL;
-
-						if ((homeDir = getenv("HOME")) == NULL)
-						{
-							homeDir = getpwuid(getuid())->pw_dir;
-						}
-
 						// look in the plugins dir
-						String resDir;
-						resDir.Append(homeDir);
+						String resDir(LinuxFileUtils::GetHomePath());
 						resDir.Append("/.Solar2D/Plugins/");
 						PathForFile(filename, resDir.GetString(), result);
 						Rtt_WARN_SIM(!filename || FileExists(result.GetString()), ("WARNING: Cannot create path for resource file '%s (%s || %s || %s)'. File does not exist.\n\n", filename, result1.GetString(), result2.GetString(), result.GetString()));
@@ -302,6 +295,7 @@ namespace Rtt
 				case MPlatform::kSystemResourceDir:
 				{
 					PathForFile(filename, fResourceDir.GetString(), result);
+
 					if (filename != NULL && FileExists(result.GetString()) == false)
 					{
 						// look for Resources dir
@@ -334,15 +328,14 @@ namespace Rtt
 
 				case MPlatform::kPluginsDir:
 				{
-					const char *homeDir = NULL;
+					std::string pluginPath;
 
-					if ((homeDir = getenv("HOME")) == NULL)
-					{
-						homeDir = getpwuid(getuid())->pw_dir;
-					}
-
-					std::string pluginPath(homeDir);
+#ifdef Rtt_SIMULATOR
+					pluginPath = LinuxFileUtils::GetHomePath();
 					pluginPath.append("/.Solar2D/Plugins");
+#else
+					pluginPath = LinuxFileUtils::GetStartupPath(NULL);
+#endif
 
 					PathForFile(filename, pluginPath.c_str(), result);
 					break;
@@ -385,6 +378,7 @@ namespace Rtt
 	void LinuxPlatform::PathForFile(const char *filename, const char *baseDir, String &result) const
 	{
 		result.Set(NULL);
+
 		if (filename)
 		{
 			// Append absolute path to the given directory.
@@ -392,6 +386,7 @@ namespace Rtt
 
 			// Append directory separator, if not already there.
 			size_t npl = strlen(result.GetString());
+
 			if (npl > 0 && result.GetString()[npl - 1] != '/')
 			{
 				result.Append("/");
@@ -414,9 +409,9 @@ namespace Rtt
 
 	PlatformEventSound *LinuxPlatform::CreateEventSound(const ResourceHandle<lua_State> &handle, const char *filePath) const
 	{
-		//		LinuxEventSound *p = Rtt_NEW(fAllocator, LinuxEventSound(handle, *fAllocator));
-		//		p->Load(filePath);
-		return NULL; //p;
+		// LinuxEventSound *p = Rtt_NEW(fAllocator, LinuxEventSound(handle, *fAllocator));
+		// p->Load(filePath);
+		return NULL;
 	}
 
 	void LinuxPlatform::ReleaseEventSound(PlatformEventSound *soundID) const
@@ -426,15 +421,15 @@ namespace Rtt
 
 	void LinuxPlatform::PlayEventSound(PlatformEventSound *soundID) const
 	{
-		// soundID->Play();
+		//soundID->Play();
 	}
 
 	PlatformAudioPlayer *LinuxPlatform::GetAudioPlayer(const ResourceHandle<lua_State> &handle) const
 	{
-		//		if (!fAudioPlayer)
-		//		{
-		//			fAudioPlayer = Rtt_NEW(fAllocator, LinuxAudioPlayer(handle, *fAllocator));
-		//		}
+		//if (!fAudioPlayer)
+		//{
+		//fAudioPlayer = Rtt_NEW(fAllocator, LinuxAudioPlayer(handle, *fAllocator));
+		//}
 		return NULL; //fAudioPlayer;
 	}
 
@@ -446,10 +441,12 @@ namespace Rtt
 	void LinuxPlatform::RaiseError(MPlatform::Error e, const char *reason) const
 	{
 		const char kNull[] = "(null)";
+
 		if (!reason)
 		{
 			reason = kNull;
 		}
+
 		Rtt_TRACE(("MPlatformFactory error(%d): %s\n", e, kNull));
 	}
 
@@ -470,11 +467,33 @@ namespace Rtt
 
 	void LinuxPlatform::SetStatusBarMode(MPlatform::StatusBarMode newValue) const
 	{
+		switch (newValue)
+		{
+			case MPlatform::StatusBarMode::kHiddenStatusBar:
+				break;
+
+			case MPlatform::StatusBarMode::kDefaultStatusBar:
+				break;
+
+			case MPlatform::StatusBarMode::kTranslucentStatusBar:
+				break;
+
+			case MPlatform::StatusBarMode::kDarkStatusBar:
+				break;
+
+			case MPlatform::StatusBarMode::kLightTransparentStatusBar:
+				break;
+
+			case MPlatform::StatusBarMode::kDarkTransparentStatusBar:
+				break;
+		}
+
+		fStatusBarMode = newValue;
 	}
 
 	MPlatform::StatusBarMode LinuxPlatform::GetStatusBarMode() const
 	{
-		return MPlatform::kDefaultStatusBar;
+		return fStatusBarMode;
 	}
 
 	int LinuxPlatform::GetStatusBarHeight() const
@@ -517,19 +536,27 @@ namespace Rtt
 
 	bool LinuxPlatform::RequestSystem(lua_State *L, const char *actionName, int optionsIndex) const
 	{
+		if (Rtt_StringCompareNoCase(actionName, "exitApplication") == 0)
+		{
+			wxGetApp().GetFrame()->Close(true);
+			return true;
+		}
+
 		return false;
 	}
 
 	void LinuxPlatform::RuntimeErrorNotification(const char *errorType, const char *message, const char *stacktrace) const
 	{
-		NewRuntimeErrorDialog *newRuntimeErrorDialog = new NewRuntimeErrorDialog(NULL, wxID_ANY, wxEmptyString);
-		newRuntimeErrorDialog->SetProperties(errorType, message, stacktrace);
-
-		if (newRuntimeErrorDialog->ShowModal() == wxID_OK)
+		if (!fShowRuntimeErrors || fRuntimeErrorDialog->IsShown())
 		{
+			return;
 		}
 
-		newRuntimeErrorDialog->Destroy();
+		fRuntimeErrorDialog->SetProperties(errorType, message, stacktrace);
+
+		if (fRuntimeErrorDialog->ShowModal() == wxID_OK)
+		{
+		}
 	}
 
 	const MCrypto &LinuxPlatform::GetCrypto() const
@@ -547,43 +574,46 @@ namespace Rtt
 
 		// Fetch the requested preference value.
 		const char *resultPointer = "";
+		int systemLanguage = wxLocale::GetSystemLanguage();
+
+		// fallback to en_us if wx wasn't able to determine the system language
+		if (systemLanguage == wxLANGUAGE_UNKNOWN)
+		{
+			systemLanguage = wxLANGUAGE_ENGLISH_US;
+		}
+
+		wxString localeName = wxLocale::GetLanguageInfo(systemLanguage)->CanonicalName.Lower();
+
 		switch (category)
 		{
 			case kLocaleLanguage:
-				resultPointer = "en"; // fixme: jsGetLocaleLanguage();
+				resultPointer = localeName.ToStdString().substr(0, 2).c_str();
 				break;
 			case kLocaleCountry:
-				resultPointer = "US"; // fixme: jsGetLocaleCountry();
+				resultPointer = localeName.ToStdString().substr(3, 5).c_str();
 				break;
 			case kLocaleIdentifier:
 			case kUILanguage:
 			{
-				resultPointer = "en_US"; // fixme: jsGetLanguage();
+				resultPointer = localeName.ToStdString().c_str();
 				break;
 			}
 			case kDefaultStatusBarFile:
-				// todo
 				break;
 			case kDarkStatusBarFile:
-				// todo
 				break;
 			case kTranslucentStatusBarFile:
-				// todo
 				break;
 			case kLightTransparentStatusBarFile:
-				// todo
 				break;
 			case kDarkTransparentStatusBarFile:
-				// todo
 				break;
 			case kScreenDressingFile:
-				// todo
 				break;
 			case kSubscription:
-				// todo
 				break;
 			default:
-				//			Rtt_ASSERT_NOT_REACHED();
+				//Rtt_ASSERT_NOT_REACHED();
 				break;
 		}
 
@@ -594,7 +624,7 @@ namespace Rtt
 
 	void LinuxPlatform::SetActivityIndicator(bool visible) const
 	{
-		wxGetApp().getParent()->SetCursor(visible ? *wxHOURGLASS_CURSOR : *wxSTANDARD_CURSOR);
+		wxGetApp().GetParent()->SetCursor(visible ? *wxHOURGLASS_CURSOR : *wxSTANDARD_CURSOR);
 	}
 
 	PlatformWebPopup *LinuxPlatform::GetWebPopup() const
@@ -604,6 +634,7 @@ namespace Rtt
 		{
 			fWebPopup = Rtt_NEW(&GetAllocator(), LinuxWebPopup());
 		}
+
 		return fWebPopup;
 #else
 		return NULL;
@@ -632,11 +663,11 @@ namespace Rtt
 		}
 		else if (Rtt_StringCompareNoCase(name, "sms") == 0)
 		{
-			// Display a "Send SMS" window.
+			// nop
 		}
 		else if ((Rtt_StringCompareNoCase(name, "rateApp") == 0) || (Rtt_StringCompareNoCase(name, "appStore") == 0))
 		{
-			// Display the app store window.
+			// nop
 		}
 		else
 		{
@@ -677,7 +708,7 @@ namespace Rtt
 
 	PlatformDisplayObject *LinuxPlatform::CreateNativeMapView(const Rect &bounds) const
 	{
-		return 0; //Rtt_NEW(&GetAllocator(), LinuxMapViewObject(bounds));
+		return NULL;
 	}
 
 	PlatformDisplayObject *LinuxPlatform::CreateNativeWebView(const Rect &bounds) const
@@ -705,7 +736,7 @@ namespace Rtt
 
 	Rtt_Real LinuxPlatform::GetStandardFontSize() const
 	{
-		return 32.0f;
+		return 16.0f;
 	}
 
 	S32 LinuxPlatform::GetFontNames(lua_State *L, int index) const
@@ -713,6 +744,7 @@ namespace Rtt
 		S32 numFonts = 0;
 #if 0
 		Rtt::StringArray fonts(fAllocator);
+
 		if (NativeToJavaBridge::GetInstance()->GetFonts(fonts))
 		{
 			numFonts = fonts.GetLength();
@@ -724,6 +756,7 @@ namespace Rtt
 			}
 		}
 #endif
+
 		return numFonts;
 	}
 
@@ -740,6 +773,7 @@ namespace Rtt
 
 	void LinuxPlatform::SetTapDelay(Rtt_Real delay) const
 	{
+		// todo:
 	}
 
 	Rtt_Real LinuxPlatform::GetTapDelay() const
@@ -749,11 +783,7 @@ namespace Rtt
 
 	PlatformFBConnect *LinuxPlatform::GetFBConnect() const
 	{
-		//	if (NULL == fFBConnect)
-		///	{
-		//		fFBConnect = Rtt_NEW(fAllocator, LinuxFBConnect);
-		//	}
-		return 0; //fFBConnect;
+		return 0;
 	}
 
 	void *LinuxPlatform::CreateAndScheduleNotification(lua_State *L, int index) const
@@ -794,18 +824,159 @@ namespace Rtt
 		}
 
 		// Handle the given property value.
-		if (Rtt_StringCompare(key, "applicationIconBadgeNumber") == 0)
+		if (Rtt_StringCompare(key, "windowMode") == 0)
 		{
-			// Clear all notifications if the application badge number was set to zero.
-			// Note: This is to match iOS' behavior.
-			if (lua_type(L, valueIndex) == LUA_TNUMBER)
+			if (lua_type(L, valueIndex) == LUA_TSTRING)
 			{
-				int badgeNumber = lua_tointeger(L, valueIndex);
-				if (badgeNumber <= 0)
+				const char *windowMode = lua_tostring(L, valueIndex);
+
+				if (windowMode != NULL)
 				{
-					//TODO: Cancel all notifications.
+					if (Rtt_StringCompare(windowMode, "normal") == 0)
+					{
+						// todo
+					}
+					else if (Rtt_StringCompare(windowMode, "minimized") == 0)
+					{
+						wxGetApp().GetFrame()->Iconize(true);
+					}
+					else if (Rtt_StringCompare(windowMode, "maximized") == 0)
+					{
+						/*
+						bool isFullScreen = wxGetApp().GetFrame()->IsFullScreen();
+
+						if (isFullScreen)
+						{
+							wxGetApp().GetFrame()->ShowFullScreen(false);
+						}
+						else
+						{
+							wxGetApp().GetFrame()->Maximize(true);
+						}*/
+					}
+					else if (Rtt_StringCompare(windowMode, "fullscreen") == 0)
+					{
+						// note: seems to need the frame set to wxDEFAULT_FRAME_STYLE to work
+						// commenting out as it isn't enough to just set the window to fullscreen for this to work
+						//wxGetApp().GetFrame()->ShowFullScreen(true, wxFULLSCREEN_ALL);
+					}
 				}
-				//TODO: Update the badge count on the Windows Phone tile???
+			}
+		}
+		// window title text
+		else if (Rtt_StringCompare(key, "windowTitleText") == 0)
+		{
+			if (lua_type(L, valueIndex) == LUA_TSTRING)
+			{
+				const char *windowTitle = lua_tostring(L, valueIndex);
+
+				if (windowTitle != NULL)
+				{
+					wxGetApp().GetFrame()->SetTitle(windowTitle);
+				}
+			}
+		}
+		// mouse cursor
+		else if (Rtt_StringCompare(key, "mouseCursorVisible") == 0)
+		{
+			if (lua_type(L, valueIndex) == LUA_TBOOLEAN)
+			{
+				bool cursorVisible = lua_toboolean(L, valueIndex);
+				isMouseCursorVisible = cursorVisible;
+				wxCursor cursor = cursorVisible ? *wxSTANDARD_CURSOR : wxCURSOR_BLANK;
+				wxGetApp().GetFrame()->SetCursor(cursor);
+			}
+		}
+		// mouse cursor type
+		else if (Rtt_StringCompare(key, "mouseCursor") == 0)
+		{
+			if (lua_type(L, valueIndex) == LUA_TSTRING)
+			{
+				const char *cursorName = lua_tostring(L, valueIndex);
+				wxCursor cursor(wxCURSOR_ARROW);
+
+				if (strcasecmp(cursorName, "arrow") == 0)
+				{
+					cursor = wxCURSOR_ARROW;
+				}
+				else if (strcasecmp(cursorName, "beam") == 0)
+				{
+					cursor = wxCURSOR_IBEAM;
+				}
+				else if (strcasecmp(cursorName, "bullseye") == 0)
+				{
+					cursor = wxCURSOR_BULLSEYE;
+				}
+				else if (strcasecmp(cursorName, "crosshair") == 0)
+				{
+					cursor = wxCURSOR_CROSS;
+				}
+				else if (strcasecmp(cursorName, "leftButton") == 0)
+				{
+					cursor = wxCURSOR_LEFT_BUTTON;
+				}
+				else if (strcasecmp(cursorName, "middleButton") == 0)
+				{
+					cursor = wxCURSOR_MIDDLE_BUTTON;
+				}
+				else if (strcasecmp(cursorName, "notAllowed") == 0)
+				{
+					cursor = wxCURSOR_NO_ENTRY;
+				}
+				else if (strcasecmp(cursorName, "paintBrush") == 0)
+				{
+					cursor = wxCURSOR_PAINT_BRUSH;
+				}
+				else if (strcasecmp(cursorName, "pencil") == 0)
+				{
+					cursor = wxCURSOR_PENCIL;
+				}
+				else if (strcasecmp(cursorName, "pointingHand") == 0)
+				{
+					cursor = wxCURSOR_HAND;
+				}
+				else if (strcasecmp(cursorName, "pointLeft") == 0)
+				{
+					cursor = wxCURSOR_POINT_LEFT;
+				}
+				else if (strcasecmp(cursorName, "pointRight") == 0)
+				{
+					cursor = wxCURSOR_POINT_RIGHT;
+				}
+				else if (strcasecmp(cursorName, "questionArrow") == 0)
+				{
+					cursor = wxCURSOR_QUESTION_ARROW;
+				}
+				else if (strcasecmp(cursorName, "resizeLeftRight") == 0)
+				{
+					cursor = wxCURSOR_SIZEWE;
+				}
+				else if (strcasecmp(cursorName, "resizeUpDown") == 0)
+				{
+					cursor = wxCURSOR_SIZENS;
+				}
+				else if (strcasecmp(cursorName, "rightArrow") == 0)
+				{
+					cursor = wxCURSOR_RIGHT_ARROW;
+				}
+				else if (strcasecmp(cursorName, "rightButton") == 0)
+				{
+					cursor = wxCURSOR_RIGHT_BUTTON;
+				}
+				else if (strcasecmp(cursorName, "sizing") == 0)
+				{
+					cursor = wxCURSOR_SIZING;
+				}
+				else if (strcasecmp(cursorName, "sprayCan") == 0)
+				{
+					cursor = wxCURSOR_SPRAYCAN;
+				}
+				else if (strcasecmp(cursorName, "wait") == 0)
+				{
+					cursor = wxCURSOR_WAIT;
+				}
+
+				wxGetApp().GetFrame()->SetCursor(cursor);
 			}
 		}
 	}
@@ -820,28 +991,43 @@ namespace Rtt
 
 		int pushedValues = 0;
 
-		// todo
-		/*
 		// Push the requested native property information to Lua.
 		if (Rtt_StringCompare(key, "windowTitleText") == 0)
 		{
-			// Fetch the window's title bar text.
-			// todo
-			lua_pushstring(L, "");
+			lua_pushstring(L, wxGetApp().GetFrame()->GetTitle().ToStdString().c_str());
 			pushedValues = 1;
 		}
 		else if (Rtt_StringCompare(key, "windowMode") == 0)
 		{
-			// Fetch the window's current mode such as "normal", "maximized", "fullscreen", etc.
-			// todo
-			lua_pushstring(L, "");
+			bool isFullScreen = wxGetApp().GetFrame()->IsFullScreen();
+			bool isMinimized = wxGetApp().GetFrame()->IsIconized();
+			bool isMaximized = wxGetApp().GetFrame()->IsMaximized();
+			bool isNormal = !isFullScreen || !isMinimized || !isMaximized;
+			const char *windowMode = NULL;
+
+			if (isFullScreen)
+			{
+				windowMode = "fullscreen";
+			}
+			else if (isMinimized)
+			{
+				windowMode = "minimized";
+			}
+			else if (isMaximized)
+			{
+				windowMode = "maximized";
+			}
+			else if (isNormal)
+			{
+				windowMode = "normal";
+			}
+
+			lua_pushstring(L, windowMode);
 			pushedValues = 1;
 		}
 		else if (Rtt_StringCompare(key, "mouseCursorVisible") == 0)
 		{
-			// Fetch the mouse cursor's current visibility state.
-			// todo
-			lua_pushboolean(L, 1);
+			lua_pushboolean(L, isMouseCursorVisible);
 			pushedValues = 1;
 		}
 		else
@@ -856,7 +1042,6 @@ namespace Rtt
 				Rtt_LogException("native.getProperty() was given unknown key: %s", key);
 			}
 		}
-		*/
 
 		// Push nil if given a key that is unknown on this platform.
 		if (pushedValues <= 0)
@@ -878,47 +1063,40 @@ namespace Rtt
 		}
 
 		// Push the requested system information to Lua.
-		int pushedValues = 0;
 		if (Rtt_StringCompare(key, "appName") == 0)
 		{
 			// Fetch the application's name.
-			lua_pushstring(L, "appName"); // todo
-			pushedValues = 1;
+			lua_pushstring(L, wxGetApp().GetFrame()->GetContext()->GetAppName().c_str());
 		}
 		else if (Rtt_StringCompare(key, "appVersionString") == 0)
 		{
 			// Return an empty version string since it is unknown by the simulator.
-			lua_pushstring(L, "appVersionString"); // todo
-			pushedValues = 1;
+			lua_pushstring(L, ""); // todo
 		}
 		else if (Rtt_StringCompare(key, "bundleID") == 0)
 		{
-			lua_pushstring(L, "bundleID"); // todo
-			pushedValues = 1;
+			lua_pushstring(L, ""); // todo
 		}
 		else if (Rtt_StringCompare(key, "isoCountryCode") == 0)
 		{
 			// Fetch the ISO 3166-1 country code.
-			lua_pushstring(L, "isoCountryCode"); // todo
-			pushedValues = 1;
+			lua_pushstring(L, ""); // todo
 		}
 		else if (Rtt_StringCompare(key, "isoLanguageCode") == 0)
 		{
 			// Fetch the ISO 639 language code with an ISO 15924 script code appended to it if available.
 			// Note: This will return a 3 letter ISO 639-2 code if current language is not in the 2 letter ISO 639-1 standard.
 			//       For example, this can happen with the Hawaiian language, which will return "haw".
-			lua_pushstring(L, "isoLanguageCode"); // todo
-			pushedValues = 1;
+			lua_pushstring(L, ""); // todo
 		}
 		else
 		{
 			// Push nil if given a key that is unknown on this platform.
 			lua_pushnil(L);
-			pushedValues = 1;
 		}
 
 		// Return the number of values pushed into Lua.
-		return pushedValues;
+		return 1;
 	}
 
 	void LinuxPlatform::NetworkBaseRequest(lua_State *L, const char *url, const char *method, LuaResource *listener, int paramsIndex, const char *path) const
@@ -981,6 +1159,7 @@ namespace Rtt
 	{
 		// add category name as prefix
 		std::string key(categoryName);
+
 		if (strlen(keyName) > 0)
 		{
 			key += '.';
@@ -994,6 +1173,7 @@ namespace Rtt
 		path += key;
 		FILE *f = fopen(path.c_str(), "rb");
 		bool rc = false;
+
 		if (f)
 		{
 			int n = fread(val, 1, sizeof(val) - 1, f);
@@ -1001,16 +1181,19 @@ namespace Rtt
 			fclose(f);
 			rc = true;
 		}
+
 		return rc == false ? Preference::ReadValueResult::kPreferenceNotFound : Preference::ReadValueResult::SucceededWith(val);
 	}
 
 	OperationResult LinuxPlatform::SetPreferences(const char *categoryName, const PreferenceCollection &preferences) const
 	{
 		bool rc = true;
+
 		for (int index = preferences.GetCount() - 1; index >= 0 && rc == true; index--)
 		{
 			// Fetch the next preference to write to the database.
 			auto preferencePointer = preferences.GetByIndex(index);
+
 			if (preferencePointer != NULL)
 			{
 				// add category name as prefix
@@ -1029,6 +1212,7 @@ namespace Rtt
 				path += '/';
 				path += key;
 				FILE *f = fopen(path.c_str(), "wb");
+
 				if (f)
 				{
 					fwrite(val, 1, strlen(val), f);
@@ -1037,12 +1221,14 @@ namespace Rtt
 				}
 			}
 		}
+
 		return rc == false ? OperationResult::FailedWith("This API is not supported on this platform.") : Rtt::OperationResult::kSucceeded;
 	}
 
 	OperationResult LinuxPlatform::DeletePreferences(const char *categoryName, const char **keyNameArray, U32 keyNameCount) const
 	{
 		bool rc = true;
+
 		for (int i = 0; i < keyNameCount && keyNameArray && rc; i++)
 		{
 			// Fetch the next preference key, add category name as prefix
@@ -1057,6 +1243,7 @@ namespace Rtt
 			int n = Rtt_DeleteFile(path.c_str());
 			rc = n == 0 ? true : false;
 		}
+
 		return rc == false ? OperationResult::FailedWith("This API is not supported on this platform.") : Rtt::OperationResult::kSucceeded;
 	}
 
@@ -1074,12 +1261,9 @@ namespace Rtt
 		fScreenSurface->setWindow(ctx);
 	}
 
-	//
-	// for alert
-	//
-
+// for native.showAlert
 	msgBox::msgBox(const char *title, const char *msg, const char **buttonLabels, U32 numButtons, LuaResource *resource)
-		: wxFrame(wxGetApp().getFrame(), wxID_ANY, title, wxDefaultPosition, wxSize(520, 180), wxCAPTION | wxCLOSE_BOX), fCallback(resource)
+		: wxFrame(wxGetApp().GetFrame(), wxID_ANY, title, wxDefaultPosition, wxSize(520, 180), wxCAPTION | wxCLOSE_BOX), fCallback(resource)
 	{
 		wxSize sz = GetSize();
 		wxPanel *panel = new wxPanel(this, wxID_ANY);
@@ -1092,12 +1276,14 @@ namespace Rtt
 
 		// add buttons
 		wxBoxSizer *gs = new wxBoxSizer(wxHORIZONTAL);
+
 		for (int i = 0; i < numButtons; i++)
 		{
 			const char *caption = buttonLabels[i];
 			wxButton *b = new wxButton(panel, i, caption);
 			Connect(i, wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(msgBox::ShowMessage));
 			gs->Add(b, 0, 0, 7);
+			gs->AddSpacer(5);
 		}
 
 		Connect(wxID_ANY, wxEVT_CLOSE_WINDOW, wxCloseEventHandler(msgBox::OnClose));
@@ -1115,6 +1301,7 @@ namespace Rtt
 	{
 		// Invoke the Lua listener.
 		int id = e.GetId();
+
 		if (fCallback)
 		{
 			// Invoke the Lua listener.
@@ -1140,5 +1327,4 @@ namespace Rtt
 
 		Destroy();
 	}
-
-} // namespace Rtt
+}; // namespace Rtt

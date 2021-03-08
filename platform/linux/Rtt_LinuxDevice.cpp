@@ -9,15 +9,11 @@
 
 #include "Core/Rtt_Build.h"
 #include "Rtt_LinuxDevice.h"
-
-// ----------------------------------------------------------------------------
+#include "wx/wx.h"
 
 namespace Rtt
 {
-
-	// ----------------------------------------------------------------------------
-
-#pragma region Constructors / Destructors
+	#pragma region Constructors / Destructors
 	LinuxDevice::LinuxDevice(Rtt_Allocator &allocator)
 		: fAllocator(allocator),
 		  fInputDeviceManager(&allocator),
@@ -29,9 +25,10 @@ namespace Rtt
 	{
 	}
 
-#pragma endregion
+	#pragma endregion
 
-#pragma region Public Member Functions
+	#pragma region Public Member Functions
+
 	void LinuxDevice::SetOrientation(DeviceOrientation::Type orientation)
 	{
 		fOrientation = orientation;
@@ -55,19 +52,19 @@ namespace Rtt
 
 		switch (type)
 		{
-		case MPlatformDevice::kGyroscopeEvent:
-			break;
-		case MPlatformDevice::kOrientationEvent:
-		case MPlatformDevice::kLocationEvent:
-		case MPlatformDevice::kHeadingEvent:
-		case MPlatformDevice::kMultitouchEvent:
-		case MPlatformDevice::kKeyEvent:
-		case MPlatformDevice::kAccelerometerEvent:
-			hasEventSource = true;
-			break;
-		default:
-			Rtt_ASSERT_NOT_REACHED();
-			break;
+			case MPlatformDevice::kGyroscopeEvent:
+				break;
+			case MPlatformDevice::kOrientationEvent:
+			case MPlatformDevice::kLocationEvent:
+			case MPlatformDevice::kHeadingEvent:
+			case MPlatformDevice::kMultitouchEvent:
+			case MPlatformDevice::kKeyEvent:
+			case MPlatformDevice::kAccelerometerEvent:
+				hasEventSource = true;
+				break;
+			default:
+				Rtt_ASSERT_NOT_REACHED();
+				break;
 		}
 		return hasEventSource;
 	}
@@ -78,16 +75,16 @@ namespace Rtt
 
 		switch (type)
 		{
-		case MPlatformDevice::kOrientationEvent:
-		case MPlatformDevice::kLocationEvent:
-		case MPlatformDevice::kAccelerometerEvent:
-		case MPlatformDevice::kGyroscopeEvent:
-		case MPlatformDevice::kHeadingEvent:
-		case MPlatformDevice::kMultitouchEvent:
-			break;
-		default:
-			Rtt_ASSERT_NOT_REACHED();
-			break;
+			case MPlatformDevice::kOrientationEvent:
+			case MPlatformDevice::kLocationEvent:
+			case MPlatformDevice::kAccelerometerEvent:
+			case MPlatformDevice::kGyroscopeEvent:
+			case MPlatformDevice::kHeadingEvent:
+			case MPlatformDevice::kMultitouchEvent:
+				break;
+			default:
+				Rtt_ASSERT_NOT_REACHED();
+				break;
 		}
 	}
 
@@ -97,16 +94,16 @@ namespace Rtt
 
 		switch (type)
 		{
-		case MPlatformDevice::kOrientationEvent:
-		case MPlatformDevice::kLocationEvent:
-		case MPlatformDevice::kAccelerometerEvent:
-		case MPlatformDevice::kGyroscopeEvent:
-		case MPlatformDevice::kHeadingEvent:
-		case MPlatformDevice::kMultitouchEvent:
-			break;
-		default:
-			Rtt_ASSERT_NOT_REACHED();
-			break;
+			case MPlatformDevice::kOrientationEvent:
+			case MPlatformDevice::kLocationEvent:
+			case MPlatformDevice::kAccelerometerEvent:
+			case MPlatformDevice::kGyroscopeEvent:
+			case MPlatformDevice::kHeadingEvent:
+			case MPlatformDevice::kMultitouchEvent:
+				break;
+			default:
+				Rtt_ASSERT_NOT_REACHED();
+				break;
 		}
 	}
 
@@ -122,7 +119,9 @@ namespace Rtt
 
 	const char *LinuxDevice::GetName() const
 	{
-		return "";
+		fName = wxGetLinuxDistributionInfo().Id.ToStdString().c_str();
+
+		return fName.c_str();
 	}
 
 	const char *LinuxDevice::GetUniqueIdentifier(IdentifierType t) const
@@ -131,22 +130,25 @@ namespace Rtt
 
 		switch (t)
 		{
-		case MPlatformDevice::kDeviceIdentifier:
-			break;
-		case MPlatformDevice::kHardwareIdentifier:
-			break;
-		case MPlatformDevice::kOSIdentifier:
-			break;
-		case MPlatformDevice::kUdidIdentifier:
-			break;
-		default:
-			break;
+			case MPlatformDevice::kDeviceIdentifier:
+				break;
+			case MPlatformDevice::kHardwareIdentifier:
+				break;
+			case MPlatformDevice::kOSIdentifier:
+				break;
+			case MPlatformDevice::kUdidIdentifier:
+				break;
+			default:
+				break;
 		}
 		return result;
 	}
 
 	MPlatformDevice::EnvironmentType LinuxDevice::GetEnvironment() const
 	{
+#ifdef Rtt_SIMULATOR
+		return kSimulatorEnvironment;
+#endif
 		return kDeviceEnvironment;
 	}
 
@@ -167,7 +169,22 @@ namespace Rtt
 
 	const char *LinuxDevice::GetArchitectureInfo() const
 	{
-		return "Lua";
+		switch(wxPlatformInfo::Get().GetArchitecture())
+		{
+			case wxARCH_INVALID:
+				fArchitecture = "unknown";
+				break;
+
+			case wxARCH_32:
+				fArchitecture = "x86";
+				break;
+
+			case wxARCH_64:
+				fArchitecture = "x64";
+				break;
+		}
+
+		return fArchitecture.c_str();
 	}
 
 	PlatformInputDeviceManager &LinuxDevice::GetInputDeviceManager()
@@ -195,13 +212,8 @@ namespace Rtt
 
 	const char *LinuxDevice::GetManufacturer() const
 	{
-		return "CoronaLabs";
+		return "Solar2D";
 	}
 
-#pragma endregion
-
-	// ----------------------------------------------------------------------------
-
-} // namespace Rtt
-
-// ----------------------------------------------------------------------------
+	#pragma endregion
+}; // namespace Rtt

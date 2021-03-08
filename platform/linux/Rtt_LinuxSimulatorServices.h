@@ -7,16 +7,15 @@
 //
 //////////////////////////////////////////////////////////////////////////////
 
+#ifndef Rtt_LinuxSimulatorServices_H
+#define Rtt_LinuxSimulatorServices_H
+
 #include "Rtt_MSimulatorServices.h"
 #include "Rtt_LuaResource.h"
 #include <string>
 
-#ifndef Rtt_LinuxSimulatorServices_H
-#define Rtt_LinuxSimulatorServices_H
-
 namespace Rtt
 {
-
 	/// <summary>
 	///  <para>
 	///   Provides access to the simulator window's project services such as "New Project", "Open Project",
@@ -69,7 +68,6 @@ namespace Rtt
 		/// </param>
 		/// <returns>Returns the name of the user's subscription such as Indie or Pro.</returns>
 		virtual const char *GetSubscription(S32 *expirationTimestamp) const;
-
 		virtual void GetRecentDocs(LightPtrArray<RecentProjectInfo> *list) const;
 		virtual const char *GetPreference(const char *prefName) const;
 		virtual void SetPreference(const char *prefName, const char *prefValue) const;
@@ -88,14 +86,8 @@ namespace Rtt
 		virtual bool ShowProjectSandbox(const char *name) const;
 
 	private:
-		static std::string currentProjectPath;
-		/// <summary>
-		///  Reference to the simulator application's view that will will implement this class' services
-		///  such as "New Project", "Open Project", etc.
-		/// </summary>
-		//		CSimulatorView& fSimulatorView;
+		static std::string fCurrentProjectPath;
 	};
-
-} // namespace Rtt
+}; // namespace Rtt
 
 #endif

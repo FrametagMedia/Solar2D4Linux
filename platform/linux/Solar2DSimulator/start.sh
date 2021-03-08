@@ -1,8 +1,6 @@
-SCRIPT_HOME=`dirname $0 | while read a; do cd $a && pwd && break; done`
+#!/bin/bash 
+cd /opt/Solar2D
 
-export PATH="$PATH:$SCRIPT_HOME/Resources"
-export ANDROID_SDK="$SCRIPT_HOME/android-sdk"
+export PATH="$PATH:$PWD/Resources"
 
-$SCRIPT_HOME/Solar2DSimulator
-
-
+./Solar2DSimulator
