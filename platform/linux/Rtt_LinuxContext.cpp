@@ -880,11 +880,11 @@ void SolarFrame::CreateMenus()
 			fMenuMain->Append(fileMenu, _T("&File"));
 
 			// view menu
-			fViewMenu = new wxMenu();
-			fZoomIn = fViewMenu->Append(ID_MENU_ZOOM_IN, _T("&Zoom In \tCtrl-KP_ADD"));
-			fZoomOut = fViewMenu->Append(ID_MENU_ZOOM_OUT, _T("&Zoom Out \tCtrl-KP_Subtract"));
-			fViewMenu->AppendSeparator();
-			fMenuMain->Append(fViewMenu, _T("&View"));
+			//fViewMenu = new wxMenu();
+			//fZoomIn = fViewMenu->Append(ID_MENU_ZOOM_IN, _T("&Zoom In \tCtrl-KP_ADD"));
+			//fZoomOut = fViewMenu->Append(ID_MENU_ZOOM_OUT, _T("&Zoom Out \tCtrl-KP_Subtract"));
+			//fViewMenu->AppendSeparator();
+			//fMenuMain->Append(fViewMenu, _T("&View"));
 
 			// about menu
 			wxMenu *helpMenu = new wxMenu();
@@ -1202,7 +1202,6 @@ void SolarFrame::OnFileSystemEvent(wxFileSystemWatcherEvent &event)
 				wxCommandEvent ev(eventRelaunchProject);
 				wxPostEvent(wxGetApp().GetFrame(), ev);
 			}
-
 			break;
 		}
 
@@ -1565,10 +1564,7 @@ SolarGLCanvas::~SolarGLCanvas()
 	if (fGLContext)
 	{
 		SetCurrent(*fGLContext);
-	}
 
-	if (fGLContext)
-	{
 		delete fGLContext;
 		fGLContext = NULL;
 	}

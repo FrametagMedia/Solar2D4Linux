@@ -183,8 +183,6 @@
     #define wxUSE_UNICODE 1
 #endif
 
-#define wxUSE_WCHAR_T 1
-
 
 #define wxUSE_EXCEPTIONS 1
 
@@ -235,7 +233,7 @@
 
 #define wxUSE_FSVOLUME 1
 
-#define wxUSE_SECRETSTORE   0
+#define wxUSE_SECRETSTORE 1
 
 #define wxUSE_STDPATHS 1
 
@@ -339,6 +337,8 @@
 #define wxUSE_WEBVIEW_IE 0
 #endif
 
+#define wxUSE_WEBVIEW_EDGE 0
+
 #if (defined(__WXGTK__) && !defined(__WXGTK3__)) || defined(__WXOSX__)
 #define wxUSE_WEBVIEW_WEBKIT 0
 #else
@@ -414,6 +414,8 @@
 #define wxUSE_TREECTRL 1
 #define wxUSE_TREELISTCTRL 1
 
+#define wxUSE_NATIVE_DATAVIEWCTRL 1
+
 #define wxUSE_STATUSBAR 1
 
 #define wxUSE_NATIVE_STATUSBAR 1
@@ -467,6 +469,8 @@
 #define wxUSE_INFOBAR 1
 
 #define wxUSE_MENUS 1
+
+#define wxUSE_MENUBAR 1
 
 #define wxUSE_NOTIFICATION_MESSAGE 1
 
@@ -629,7 +633,6 @@
 #define wxUSE_THEME_METAL   0
 #define wxUSE_THEME_MONO    0
 #define wxUSE_THEME_WIN32   0
-
 
 /* --- end common options --- */
 
@@ -984,9 +987,6 @@
 /* Define if you have pthread_attr_setstacksize */
 #define HAVE_PTHREAD_ATTR_SETSTACKSIZE 1
 
-/* Define if you have shl_load() */
-/* #undef HAVE_SHL_LOAD */
-
 /* Define if you have snprintf() */
 #define HAVE_SNPRINTF 1
 
@@ -1088,9 +1088,6 @@
 
 /* Define if wchar_t is distinct type in your compiler. */
 #define wxWCHAR_T_IS_REAL_TYPE 1
-
-/* Define if you have the dlerror function.  */
-#define HAVE_DLERROR 1
 
 /* Define if you have the dladdr function.  */
 #define HAVE_DLADDR 1

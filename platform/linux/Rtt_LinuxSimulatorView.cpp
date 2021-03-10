@@ -62,13 +62,13 @@ namespace Rtt
 	LinuxPreferencesDialog::RelaunchType LinuxSimulatorView::Config::relaunchOnFileChange = LinuxPreferencesDialog::RelaunchType::Always;
 	int LinuxSimulatorView::Config::windowXPos = 10;
 	int LinuxSimulatorView::Config::windowYPos = 10;
-	int LinuxSimulatorView::Config::skinID = 6246;
+	int LinuxSimulatorView::Config::skinID = 6223;
 	int LinuxSimulatorView::Config::skinWidth = 320;
 	int LinuxSimulatorView::Config::skinHeight = 480;
 	int LinuxSimulatorView::Config::zoomedWidth = LinuxSimulatorView::Config::skinWidth;
 	int LinuxSimulatorView::Config::zoomedHeight = LinuxSimulatorView::Config::skinHeight;
-	int LinuxSimulatorView::Config::welcomeScreenZoomedWidth = 640;
-	int LinuxSimulatorView::Config::welcomeScreenZoomedHeight = 480;
+	int LinuxSimulatorView::Config::welcomeScreenZoomedWidth = 960;
+	int LinuxSimulatorView::Config::welcomeScreenZoomedHeight = 720;
 	wxConfig *LinuxSimulatorView::Config::configFile;
 	std::map<int, LinuxSimulatorView::SkinProperties> LinuxSimulatorView::fSkins;
 
