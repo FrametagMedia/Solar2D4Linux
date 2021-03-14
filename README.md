@@ -23,10 +23,6 @@ Solar2D, to enable Linux developers to build native Linux, Raspberry Pi and Andr
 
 If you're after Windows / Mac versions, I'll direct you to the [original Solar2D repository](https://github.com/Shchvova/corona).
 
-## So, who should I sponsor?
-
-If you're not interested in using Solar2D on Linux, you should sponsor the [original repository](https://github.com/Shchvova/corona). If, however, you are interested in supporting Solar2D on Linux development, you should sponsor this repository via the sponsor button at the top of this page.
-
 ## Easy-to-learn & powerful
 Solar2D is a cross-platform framework ideal for rapidly creating apps and games for mobile devices, TV, desktop systems and HTML5. That means you can create your project once and publish it to multiple types of devices, including Apple iPhone and iPad, Android phones and tablets, Amazon Fire, Mac Desktop, Windows Desktop, Linux, HTML5 and even connected TVs such as Apple TV, Fire TV, and Android TV.
 
