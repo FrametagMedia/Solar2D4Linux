@@ -1,4 +1,4 @@
-# Solar2DTux Linux App & Game Engine
+# Solar2D4Linux - The Solar2D App & Game Engine for Linux (native port)
 
 > Simple to learn and use, completely free and open source 2D game/application engine.
 
